@@ -154,3 +154,24 @@ exports.tempMakeAdmin = functions.https.onCall(async (data, context) => {
   await admin.auth().setCustomUserClaims(user.uid, { admin: true });
   return { ok: true, uid: user.uid };
 });
+
+
+exports.tempMakeAdmin = functions.https.onCall(async (data, context) => {
+  const email = data.email;
+
+  // ✅ 보안: 너 본인 이메일로 고정해.
+  if (email !== "doxxxkyung@gmail.com") {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "허용되지 않은 이메일입니다."
+    );
+  }
+
+  // 이메일로 Auth 사용자 검색 → UID 얻기
+  const user = await admin.auth().getUserByEmail(email);
+
+  // 관리자 클레임 부여
+  await admin.auth().setCustomUserClaims(user.uid, { admin: true });
+
+  return { ok: true, uid: user.uid };
+});
