@@ -144,3 +144,13 @@ exports.getAllTransactionsForAdmin = functions.https.onCall(async (data, context
   const rows = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
   return { transactions: rows };
 });
+
+exports.tempMakeAdmin = functions.https.onCall(async (data, context) => {
+  const email = data.email;
+  if (email !== "doxxxkyung@gmail.com") { // 너만 허용!
+    throw new functions.https.HttpsError("permission-denied", "허용되지 않은 이메일");
+  }
+  const user = await admin.auth().getUserByEmail(email); // ← 여기서 UID 자동 조회
+  await admin.auth().setCustomUserClaims(user.uid, { admin: true });
+  return { ok: true, uid: user.uid };
+});
