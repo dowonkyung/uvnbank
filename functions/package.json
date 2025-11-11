@@ -1,0 +1,10 @@
+{
+  "name": "bank-demo-functions",
+  "engines": { "node": "18" },
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^12.5.0",
+    "firebase-functions": "^5.1.1"
+  }
+}
