@@ -1,0 +1,62 @@
+name: Deploy Firebase (Functions + Firestore Rules) and Build Pages
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Auth to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools
+
+      - name: Set Firebase project
+        run: echo "Using project ${{ secrets.FIREBASE_PROJECT_ID }}"
+
+      - name: Install Functions deps
+        working-directory: functions
+        run: npm ci
+
+      - name: Deploy Firestore rules + Functions
+        run: firebase deploy --only firestore:rules,functions --project ${{ secrets.FIREBASE_PROJECT_ID }}
+
+  pages:
+    runs-on: ubuntu-latest
+    needs: deploy
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Build web
+        working-directory: web
+        run: |
+          npm ci || npm i
+          # Vite 사용 안 하면 이 단계는 생략 가능
+          npm run build || echo "no build step"
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web  # 정적 파일이 web/ 아래에 있으면 그대로 업로드
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
