@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 로그인 사용자 본인 정보만 읽기/쓰기 허용
+    match /users/{uid} {
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      // 관리자만 다른 사용자의 문서에 접근 가능하게 하려면 별도 함수/클레임 사용 (여기는 제한)
+    }
+
+    // 계좌: 소유자만 읽기. 쓰기는 서버(Functions)만.
+    match /accounts/{accountId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      allow write: if false;
+    }
+
+    // 거래내역: 당사자 또는 관리자만 읽기, 쓰기는 서버만.
+    match /transactions/{txId} {
+      allow read: if request.auth != null &&
+        (resource.data.fromAccountId == request.auth.uid ||
+         resource.data.toAccountId == request.auth.uid ||
+         request.auth.token.admin == true);
+      allow write: if false;
+    }
+
+    // 전역 설정을 둔다면(옵션). 관리자만 수정 가능.
+    match /settings/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+  }
+}
